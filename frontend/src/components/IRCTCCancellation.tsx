@@ -8,19 +8,20 @@ import { differenceInHours, format, isBefore, parse, subHours } from 'date-fns';
 import React, { useEffect, useState } from 'react';
 
 interface PNRData {
-  TrainNo: string;
-  TrainName: string;
-  Doj: string;
-  DepartureTime: string;
-  From: string;
-  To: string;
-  Class: string;
-  BookingFare: string;
-  PassengerStatus: {
-    Coach: string;
-    Berth: number;
+  pnrNumber: string;
+  dateOfJourney: string;
+  trainNumber: string;
+  trainName: string;
+  sourceStation: string;
+  destinationStation: string;
+  journeyClass: string;
+  bookingFare: number;
+  passengerList: {
+    passengerSerialNumber: number;
+    bookingStatus: string;
+    currentStatus: string;
   }[];
-  BookingDate: string;
+  bookingDate: string;
 }
 
 interface CancellationScenario {
@@ -53,7 +54,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
 
   useEffect(() => {
     if (pnrData) {
-      const depDateTime = parse(`${pnrData.Doj} ${pnrData.DepartureTime}`, 'dd-MM-yyyy HH:mm', new Date());
+      const depDateTime = parse(pnrData.dateOfJourney, 'MMM d, yyyy h:mm:ss a', new Date());
       setDepartureDateTime(depDateTime);
     }
   }, [pnrData]);
@@ -61,10 +62,10 @@ const IRCTCCancellationCalculator: React.FC = () => {
   const fetchPnrDetails = async () => {
     setError(null);
     setCancellationScenarios([]);
-    
+
     try {
       const response = await axios.get(`http://localhost:3001/api/pnr/${pnr}`);
-      if (response.data.status) {
+      if (response.data.success) {
         setPnrData(response.data.data);
         calculateCancellationScenarios(response.data.data);
       } else {
@@ -76,24 +77,19 @@ const IRCTCCancellationCalculator: React.FC = () => {
   };
 
   const calculateCancellationScenarios = (data: PNRData) => {
-    const departureDateTime = parse(`${data.Doj} ${data.DepartureTime}`, 'dd-MM-yyyy HH:mm', new Date());
-    const bookingDateTime = parse(data.BookingDate, 'dd-MM-yyyy', new Date());
-    const fare = parseInt(data.BookingFare);
+    const departureDateTime = parse(data.dateOfJourney, 'MMM d, yyyy h:mm:ss a', new Date());
+    const bookingDateTime = parse(data.bookingDate, 'MMM d, yyyy h:mm:ss a', new Date());
+    const fare = data.bookingFare;
     const scenarios: CancellationScenario[] = [];
     const currentTime = new Date();
 
     const addScenario = (scenarioTime: Date, description: string) => {
       const timeDiff = differenceInHours(departureDateTime, scenarioTime);
       let charge = 0;
-      const classCode = data.Class;
+      const classCode = data.journeyClass;
       const flatRate = getFlatRate(classCode);
-      const passengerCount = data.PassengerStatus.length;
+      const passengerCount = data.passengerList.length;
 
-      console.log(`timeDiff: ${timeDiff}`);
-      console.log(`scenarioTime: ${scenarioTime}`);
-      console.log(`currentTime: ${currentTime}`);
-      console.log(`departureDateTime: ${departureDateTime}`);
-      
       if (timeDiff <= 4) {
         charge = fare;
       } else if (timeDiff > 4 && timeDiff <= 12) {
@@ -101,7 +97,6 @@ const IRCTCCancellationCalculator: React.FC = () => {
       } else if (timeDiff > 12 && timeDiff <= 48) {
         charge = Math.max(0.25 * fare, flatRate * passengerCount);
       } else {
-        // 48 hours or more before departure
         charge = flatRate * passengerCount;
       }
 
@@ -118,13 +113,8 @@ const IRCTCCancellationCalculator: React.FC = () => {
     };
 
     const getFlatRate = (classCode: string): number => {
-        console.log(classCode);
       const flatRates: { [key: string]: number } = {
-        'EC': 240, '1A': 240,
-        '2A': 200, 'FC': 200,
-        '3A': 180, 'CC': 180, '3E': 180,
-        'SL': 120,
-        '2S': 60
+        '1A': 240, '2A': 200, '3A': 180, 'CC': 180, 'SL': 120, '2S': 60
       };
       return flatRates[classCode] || 60;
     };
@@ -139,7 +129,6 @@ const IRCTCCancellationCalculator: React.FC = () => {
 
   const getClassFullName = (classCode: string) => {
     const classMap: { [key: string]: string } = {
-      'EC': 'Air-Conditioned Executive Chair Class',
       '1A': 'Air-Conditioned First Class',
       '2A': 'Air-Conditioned Two-Tier Class',
       '3A': 'Air-Conditioned Three-Tier Class',
@@ -180,7 +169,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">IRCTC Cancellation Calculator</h2>
+      {/* <h2 className="text-2xl font-bold mb-4">IRCTC Cancellation Calculator</h2> */}
       <div className="space-y-4">
         <Input
           type="text"
@@ -189,7 +178,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
           onChange={(e) => setPnr(e.target.value)}
         />
         <Button onClick={fetchPnrDetails}>Fetch PNR Details</Button>
-        
+
         {pnrData && (
           <>
             <Card>
@@ -197,25 +186,25 @@ const IRCTCCancellationCalculator: React.FC = () => {
                 <CardTitle>PNR Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <p><strong>Train:</strong> {pnrData.TrainName} ({pnrData.TrainNo})</p>
-                <p><strong>Date:</strong> {pnrData.Doj}</p>
-                <p><strong>Departure Time:</strong> {pnrData.DepartureTime}</p>
-                <p><strong>From:</strong> {pnrData.From}</p>
-                <p><strong>To:</strong> {pnrData.To}</p>
-                <p><strong>Class:</strong> {getClassFullName(pnrData.Class)}</p>
-                <p><strong>Booking Fare:</strong> ₹{pnrData.BookingFare}</p>
+                <p><strong>PNR Number:</strong> {pnrData.pnrNumber}</p>
+                <p><strong>Train:</strong> {pnrData.trainName} ({pnrData.trainNumber})</p>
+                <p><strong>Date of Journey:</strong> {format(parse(pnrData.dateOfJourney, 'MMM d, yyyy h:mm:ss a', new Date()), 'yyyy-MM-dd HH:mm')}</p>
+                <p><strong>From:</strong> {pnrData.sourceStation}</p>
+                <p><strong>To:</strong> {pnrData.destinationStation}</p>
+                <p><strong>Class:</strong> {getClassFullName(pnrData.journeyClass)}</p>
+                <p><strong>Booking Fare:</strong> ₹{pnrData.bookingFare}</p>
                 <p><strong>Current Time:</strong> {format(currentTime, 'yyyy-MM-dd HH:mm:ss')}</p>
                 <p><strong>Passengers:</strong></p>
                 <ul>
-                  {pnrData.PassengerStatus.map((passenger, index) => (
+                  {pnrData.passengerList.map((passenger, index) => (
                     <li key={index}>
-                      Passenger {index + 1}: Coach {passenger.Coach}, Seat {passenger.Berth}
+                      Passenger {passenger.passengerSerialNumber}: Booking Status - {passenger.bookingStatus}, Current Status - {passenger.currentStatus}
                     </li>
                   ))}
                 </ul>
               </CardContent>
             </Card>
-            
+
             {cancellationScenarios.length > 0 && (
               <Card>
                 <CardHeader>
@@ -224,8 +213,8 @@ const IRCTCCancellationCalculator: React.FC = () => {
                 <CardContent>
                   <p className="mb-2 font-semibold">
                     {getBestCancellationAdvice(
-                      parse(pnrData.BookingDate, 'dd-MM-yyyy', new Date()),
-                      parse(`${pnrData.Doj} ${pnrData.DepartureTime}`, 'dd-MM-yyyy HH:mm', new Date())
+                      parse(pnrData.bookingDate, 'MMM d, yyyy h:mm:ss a', new Date()),
+                      parse(pnrData.dateOfJourney, 'MMM d, yyyy h:mm:ss a', new Date())
                     )}
                   </p>
                   <p className="mb-4">Refund amount reduces at these key points:</p>
@@ -243,7 +232,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
             )}
           </>
         )}
-        
+
         {error && (
           <Alert variant="destructive">
             <AlertTitle>Error</AlertTitle>
