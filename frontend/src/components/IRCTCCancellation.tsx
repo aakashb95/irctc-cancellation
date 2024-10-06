@@ -179,42 +179,62 @@ const IRCTCCancellationCalculator: React.FC = () => {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="p-2 sm:p-4 max-w-6xl mx-auto">
       <div className="space-y-4">
-        <div className="flex space-x-4">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
           <Input
             type="text"
             placeholder="Enter PNR number"
             value={pnr}
             onChange={(e) => setPnr(e.target.value)}
-            className="flex-grow"
+            className="w-full sm:w-auto sm:flex-grow"
           />
-          <Button onClick={fetchPnrDetails}>Fetch PNR Details</Button>
+          <Button onClick={fetchPnrDetails} className="w-full sm:w-auto">Fetch PNR Details</Button>
         </div>
 
         {pnrData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="h-full">
               <CardHeader>
-                <CardTitle>PNR Details</CardTitle>
+                <CardTitle className="text-xl font-bold">PNR Details</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p><strong>PNR Number:</strong> {pnrData.pnrNumber}</p>
-                <p><strong>Train:</strong> {pnrData.trainName} ({pnrData.trainNumber})</p>
-                <p><strong>Date of Journey:</strong> {format(parse(pnrData.dateOfJourney, 'MMM d, yyyy h:mm:ss a', new Date()), 'yyyy-MM-dd HH:mm')}</p>
-                <p><strong>From:</strong> {pnrData.sourceStation}</p>
-                <p><strong>To:</strong> {pnrData.destinationStation}</p>
-                <p><strong>Class:</strong> {getClassFullName(pnrData.journeyClass)}</p>
-                <p><strong>Booking Fare:</strong> ₹{pnrData.bookingFare}</p>
-                <p><strong>Current Time:</strong> {format(currentTime, 'yyyy-MM-dd HH:mm:ss')}</p>
-                <p><strong>Passengers:</strong></p>
-                <ul>
+              <CardContent className="text-sm sm:text-base">
+                <div className="grid grid-cols-2 gap-y-2">
+                  <p className="font-semibold">PNR Number:</p>
+                  <p>{pnrData.pnrNumber}</p>
+
+                  <p className="font-semibold">Train:</p>
+                  <p>{`${pnrData.trainName} (${pnrData.trainNumber})`}</p>
+
+                  <p className="font-semibold">Date of Journey:</p>
+                  <p>{format(parse(pnrData.dateOfJourney, 'yyyy-MM-dd HH:mm', new Date()), 'yyyy-MM-dd HH:mm')}</p>
+
+                  <p className="font-semibold">From:</p>
+                  <p>{pnrData.sourceStation}</p>
+
+                  <p className="font-semibold">To:</p>
+                  <p>{pnrData.destinationStation}</p>
+
+                  <p className="font-semibold">Class:</p>
+                  <p>{getClassFullName(pnrData.journeyClass)}</p>
+
+                  <p className="font-semibold">Booking Fare:</p>
+                  <p>₹{pnrData.bookingFare}</p>
+
+                  <p className="font-semibold">Current Time:</p>
+                  <p>{format(currentTime, 'yyyy-MM-dd HH:mm:ss')}</p>
+                </div>
+
+                <div className="mt-4">
+                  <p className="font-semibold mb-2">Passengers:</p>
                   {pnrData.passengerList.map((passenger, index) => (
-                    <li key={index}>
-                      Passenger {passenger.passengerSerialNumber}: Booking Status - {passenger.bookingStatus}, Current Status - {passenger.currentStatus}
-                    </li>
+                    <div key={index} className="ml-4 mb-2">
+                      <p className="font-medium">Passenger {passenger.passengerSerialNumber}:</p>
+                      <p className="ml-4">Booking Status: {passenger.bookingStatus}</p>
+                      <p className="ml-4">Current Status: {passenger.currentStatus}</p>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </CardContent>
             </Card>
 
@@ -223,7 +243,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Cancellation Scenarios</CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-y-auto max-h-[calc(100vh-200px)]">
+                <CardContent className="overflow-y-auto max-h-[60vh] lg:max-h-[calc(100vh-200px)] text-sm sm:text-base">
                   <p className="mb-2 font-semibold">
                     {getBestCancellationAdvice(
                       parse(pnrData.bookingDate, 'MMM d, yyyy h:mm:ss a', new Date()),
@@ -235,7 +255,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
                     <div
                       key={index}
                       className={`mt-2 p-2 rounded ${scenario.isPast ? 'bg-gray-300' :
-                          scenario.isBestTime ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100'
+                        scenario.isBestTime ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100'
                         }`}
                     >
                       <p>
