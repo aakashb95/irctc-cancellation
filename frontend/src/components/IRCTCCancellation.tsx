@@ -281,21 +281,33 @@ const IRCTCCancellationCalculator: React.FC = () => {
                       parse(pnrData.dateOfJourney, 'MMM d, yyyy h:mm:ss a', new Date())
                     )}
                   </p>
-                  <p className="mb-4">Refund amount reduces at these key points:</p>
-                  {cancellationScenarios.map((scenario, index) => (
+
+                  {/* Best time to cancel scenario */}
+                  {cancellationScenarios.filter(scenario => scenario.isBestTime).map((scenario, index) => (
                     <div
                       key={index}
-                      className={`mt-2 p-2 rounded ${scenario.isPast ? 'bg-gray-300' :
-                        scenario.isBestTime ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100'
-                        }`}
+                      className="mt-2 p-2 rounded bg-green-100 border-2 border-green-500"
                     >
                       <p>
                         <strong>{scenario.description}</strong>
-                        {scenario.isBestTime && (
-                          <span className="ml-2 text-green-600 font-bold">
-                            (Best time to cancel)
-                          </span>
-                        )}
+                        <span className="ml-2 text-green-600 font-bold">
+                          (Best time to cancel)
+                        </span>
+                      </p>
+                      <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
+                      <p>Cancellation Charge: ₹{scenario.charge}</p>
+                      <p>Refund Amount: ₹{scenario.refund}</p>
+                    </div>
+                  ))}
+
+                  <p className="mt-4 mb-2">Other cancellation scenarios:</p>
+                  {cancellationScenarios.filter(scenario => !scenario.isBestTime).map((scenario, index) => (
+                    <div
+                      key={index}
+                      className={`mt-2 p-2 rounded ${scenario.isPast ? 'bg-gray-300' : 'bg-gray-100'}`}
+                    >
+                      <p>
+                        <strong>{scenario.description}</strong>
                       </p>
                       <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
                       <p>Cancellation Charge: ₹{scenario.charge}</p>
