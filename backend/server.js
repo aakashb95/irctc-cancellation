@@ -15,12 +15,12 @@ app.get('/api/pnr/:pnrNumber', async (req, res) => {
   // Check if the environment is local
   const isLocalEnv = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local';
 
-  if (isLocalEnv) {
+  if (isLocalEnv && pnrNumber === "2802138091") {
     // Mock data for local environment
     const mockData = {
       "success": true,
       "data": {
-        "pnrNumber": pnrNumber,
+        "pnrNumber": "2802138091",
         "dateOfJourney": "Oct 29, 2024 4:55:50 PM",
         "trainNumber": "12952",
         "trainName": "MMCT TEJAS RAJ",
@@ -79,10 +79,14 @@ app.get('/api/pnr/:pnrNumber', async (req, res) => {
     // Return the mock data for local environment
     return res.json(mockData);
   } else {
-    // Production environment: Make the actual API call
+    // Production environment: Make the actual API call using Axios
     try {
-      const apiUrl = `${process.env.PNR_API_URL}/${pnrNumber}`;
-      const response = await axios.get(apiUrl);
+      const response = await axios.get(`https://irctc-indian-railway-pnr-status.p.rapidapi.com/getPNRStatus/${pnrNumber}`, {
+        headers: {
+          'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+          'x-rapidapi-host': 'irctc-indian-railway-pnr-status.p.rapidapi.com'
+        }
+      });
       res.json(response.data);
     } catch (error) {
       console.error('Error fetching PNR data:', error);
