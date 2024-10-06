@@ -31,6 +31,7 @@ interface CancellationScenario {
   gst: string;
   dateTime: Date;
   isPast: boolean;
+  isBestTime: boolean;
 }
 
 const IRCTCCancellationCalculator: React.FC = () => {
@@ -108,7 +109,8 @@ const IRCTCCancellationCalculator: React.FC = () => {
         refund: refund.toFixed(2),
         gst: '0.00',
         dateTime: scenarioTime,
-        isPast: isBefore(scenarioTime, currentTime)
+        isPast: isBefore(scenarioTime, currentTime),
+        isBestTime: false
       });
     };
 
@@ -123,6 +125,15 @@ const IRCTCCancellationCalculator: React.FC = () => {
     addScenario(subHours(departureDateTime, 12), "Between 4 and 12 hours before departure");
     addScenario(subHours(departureDateTime, 48), "Between 12 and 48 hours before departure");
     addScenario(subHours(departureDateTime, 72), "48 hours or more before departure");
+
+    // Determine the best time to cancel
+    const futureScenarios = scenarios.filter(s => !s.isPast);
+    if (futureScenarios.length > 0) {
+      const bestScenario = futureScenarios.reduce((prev, current) =>
+        parseFloat(current.refund) > parseFloat(prev.refund) ? current : prev
+      );
+      bestScenario.isBestTime = true;
+    }
 
     setCancellationScenarios(scenarios);
   };
@@ -221,8 +232,20 @@ const IRCTCCancellationCalculator: React.FC = () => {
                   </p>
                   <p className="mb-4">Refund amount reduces at these key points:</p>
                   {cancellationScenarios.map((scenario, index) => (
-                    <div key={index} className={`mt-2 p-2 rounded ${scenario.isPast ? 'bg-gray-300' : 'bg-gray-100'}`}>
-                      <p><strong>{scenario.description}</strong></p>
+                    <div
+                      key={index}
+                      className={`mt-2 p-2 rounded ${scenario.isPast ? 'bg-gray-300' :
+                          scenario.isBestTime ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100'
+                        }`}
+                    >
+                      <p>
+                        <strong>{scenario.description}</strong>
+                        {scenario.isBestTime && (
+                          <span className="ml-2 text-green-600 font-bold">
+                            (Best time to cancel)
+                          </span>
+                        )}
+                      </p>
                       <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
                       <p>Cancellation Charge: ₹{scenario.charge}</p>
                       <p>Refund Amount: ₹{scenario.refund}</p>
