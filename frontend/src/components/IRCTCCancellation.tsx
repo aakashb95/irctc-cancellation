@@ -168,20 +168,22 @@ const IRCTCCancellationCalculator: React.FC = () => {
   };
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      {/* <h2 className="text-2xl font-bold mb-4">IRCTC Cancellation Calculator</h2> */}
+    <div className="p-4 max-w-6xl mx-auto">
       <div className="space-y-4">
-        <Input
-          type="text"
-          placeholder="Enter PNR number"
-          value={pnr}
-          onChange={(e) => setPnr(e.target.value)}
-        />
-        <Button onClick={fetchPnrDetails}>Fetch PNR Details</Button>
+        <div className="flex space-x-4">
+          <Input
+            type="text"
+            placeholder="Enter PNR number"
+            value={pnr}
+            onChange={(e) => setPnr(e.target.value)}
+            className="flex-grow"
+          />
+          <Button onClick={fetchPnrDetails}>Fetch PNR Details</Button>
+        </div>
 
         {pnrData && (
-          <>
-            <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="h-full">
               <CardHeader>
                 <CardTitle>PNR Details</CardTitle>
               </CardHeader>
@@ -206,11 +208,11 @@ const IRCTCCancellationCalculator: React.FC = () => {
             </Card>
 
             {cancellationScenarios.length > 0 && (
-              <Card>
+              <Card className="h-full">
                 <CardHeader>
                   <CardTitle>Cancellation Scenarios</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-y-auto max-h-[calc(100vh-200px)]">
                   <p className="mb-2 font-semibold">
                     {getBestCancellationAdvice(
                       parse(pnrData.bookingDate, 'MMM d, yyyy h:mm:ss a', new Date()),
@@ -230,7 +232,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-          </>
+          </div>
         )}
 
         {error && (
