@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import axios from 'axios';
 import { differenceInHours, format, isBefore, parse, subHours } from 'date-fns';
 import React, { useEffect, useState } from 'react';
+import { Loader2 } from "lucide-react"; // Import the loader icon
 
 interface PNRData {
   pnrNumber: string;
@@ -20,6 +21,8 @@ interface PNRData {
     passengerSerialNumber: number;
     bookingStatus: string;
     currentStatus: string;
+    bookingStatusDetails: string;
+    currentStatusDetails: string;
   }[];
   bookingDate: string;
 }
@@ -41,6 +44,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
   const [cancellationScenarios, setCancellationScenarios] = useState<CancellationScenario[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [departureDateTime, setDepartureDateTime] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setCurrentTime(new Date());
@@ -63,9 +67,14 @@ const IRCTCCancellationCalculator: React.FC = () => {
   const fetchPnrDetails = async () => {
     setError(null);
     setCancellationScenarios([]);
+    setIsLoading(true);
+
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3001'
+      : 'https://irctc-cancellation.onrender.com';
 
     try {
-      const response = await axios.get(`https://irctc-cancellation.onrender.com/api/pnr/${pnr}`);
+      const response = await axios.get(`${baseUrl}/api/pnr/${pnr}`);
       if (response.data.success) {
         setPnrData(response.data.data);
         calculateCancellationScenarios(response.data.data);
@@ -74,6 +83,8 @@ const IRCTCCancellationCalculator: React.FC = () => {
       }
     } catch (error) {
       setError("An error occurred while fetching PNR details.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -178,6 +189,11 @@ const IRCTCCancellationCalculator: React.FC = () => {
     return "Cancellation will result in minimal or no refund at this point.";
   };
 
+  const formatDate = (dateString: string) => {
+    const parsedDate = parse(dateString, 'MMM d, yyyy h:mm:ss a', new Date());
+    return format(parsedDate, 'yyyy-MM-dd HH:mm');
+  };
+
   return (
     <div className="p-2 sm:p-4 max-w-6xl mx-auto">
       <div className="space-y-4">
@@ -188,8 +204,22 @@ const IRCTCCancellationCalculator: React.FC = () => {
             value={pnr}
             onChange={(e) => setPnr(e.target.value)}
             className="w-full sm:w-auto sm:flex-grow"
+            disabled={isLoading}
           />
-          <Button onClick={fetchPnrDetails} className="w-full sm:w-auto">Fetch PNR Details</Button>
+          <Button
+            onClick={fetchPnrDetails}
+            className="w-full sm:w-auto"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'Fetch PNR Details'
+            )}
+          </Button>
         </div>
 
         {pnrData && (
@@ -207,7 +237,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
                   <p>{`${pnrData.trainName} (${pnrData.trainNumber})`}</p>
 
                   <p className="font-semibold">Date of Journey:</p>
-                  <p>{format(parse(pnrData.dateOfJourney, 'yyyy-MM-dd HH:mm', new Date()), 'yyyy-MM-dd HH:mm')}</p>
+                  <p>{formatDate(pnrData.dateOfJourney)}</p>
 
                   <p className="font-semibold">From:</p>
                   <p>{pnrData.sourceStation}</p>
