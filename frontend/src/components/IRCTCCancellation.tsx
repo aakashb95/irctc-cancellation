@@ -64,7 +64,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
     setCancellationScenarios([]);
 
     try {
-      const response = await axios.get(`http://localhost:3001/api/pnr/${pnr}`);
+      const response = await axios.get(`https://irctc-cancellation.onrender.com/api/pnr/${pnr}`);
       if (response.data.success) {
         setPnrData(response.data.data);
         calculateCancellationScenarios(response.data.data);
