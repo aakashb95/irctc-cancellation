@@ -67,6 +67,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
   const fetchPnrDetails = async () => {
     setError(null);
     setCancellationScenarios([]);
+    setPnrData(null); // Clear the existing PNR data
     setIsLoading(true);
 
     const baseUrl = process.env.NODE_ENV === 'development'
