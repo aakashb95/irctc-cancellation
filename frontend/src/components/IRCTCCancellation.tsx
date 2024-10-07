@@ -1,7 +1,6 @@
 "use client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import axios from 'axios';
 import { differenceInHours, format, isBefore, parse, subHours } from 'date-fns';
@@ -244,18 +243,18 @@ const IRCTCCancellationCalculator: React.FC = () => {
   return (
     <div className="p-2 sm:p-4 max-w-6xl mx-auto">
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+        <div className="flex flex-col space-y-2">
           <Input
             type="text"
             placeholder="Enter PNR number"
             value={pnr}
             onChange={(e) => setPnr(e.target.value)}
-            className="w-full sm:w-auto sm:flex-grow"
+            className="w-full"
             disabled={isLoading}
           />
           <Button
             onClick={fetchPnrDetails}
-            className="w-full sm:w-auto"
+            className="w-full"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -270,75 +269,69 @@ const IRCTCCancellationCalculator: React.FC = () => {
         </div>
 
         {pnrData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold">PNR Details</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm sm:text-base">
-                <div className="grid grid-cols-2 gap-y-2">
-                  <p className="font-semibold">PNR Number:</p>
-                  <p>{pnrData.pnrNumber}</p>
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h2 className="text-xl font-bold mb-4">PNR Details</h2>
+              <div className="grid grid-cols-2 gap-y-2 text-sm">
+                <p className="font-semibold">PNR Number:</p>
+                <p>{pnrData.pnrNumber}</p>
 
-                  <p className="font-semibold">Train:</p>
-                  <p>{`${pnrData.trainName} (${pnrData.trainNumber})`}</p>
+                <p className="font-semibold">Train:</p>
+                <p>{`${pnrData.trainName} (${pnrData.trainNumber})`}</p>
 
-                  <p className="font-semibold">Date of Journey:</p>
-                  <p>{formatDate(pnrData.dateOfJourney)}</p>
+                <p className="font-semibold">Date of Journey:</p>
+                <p>{formatDate(pnrData.dateOfJourney)}</p>
 
-                  <p className="font-semibold">From:</p>
-                  <p>{pnrData.sourceStation}</p>
+                <p className="font-semibold">From:</p>
+                <p>{pnrData.sourceStation}</p>
 
-                  <p className="font-semibold">To:</p>
-                  <p>{pnrData.destinationStation}</p>
+                <p className="font-semibold">To:</p>
+                <p>{pnrData.destinationStation}</p>
 
-                  <p className="font-semibold">Class:</p>
-                  <p>{getClassFullName(pnrData.journeyClass)}</p>
+                <p className="font-semibold">Class:</p>
+                <p>{getClassFullName(pnrData.journeyClass)}</p>
 
-                  <p className="font-semibold">Booking Fare:</p>
-                  <p>₹{pnrData.bookingFare}</p>
+                <p className="font-semibold">Booking Fare:</p>
+                <p>₹{pnrData.bookingFare}</p>
 
-                  <p className="font-semibold">Current Time:</p>
-                  <p>{format(currentTime, 'yyyy-MM-dd HH:mm:ss')}</p>
-                </div>
+                <p className="font-semibold">Current Time:</p>
+                <p>{format(currentTime, 'yyyy-MM-dd HH:mm:ss')}</p>
+              </div>
 
-                <div className="mt-4">
-                  <p className="font-semibold mb-2">Passengers:</p>
-                  {pnrData.passengerList.map((passenger, index) => (
-                    <div key={index} className="ml-4 mb-2">
-                      <p className="font-medium">Passenger {passenger.passengerSerialNumber}:</p>
-                      <p className="ml-4">Booking Status: {passenger.bookingStatus}</p>
-                      <p className="ml-4">Current Status: {passenger.currentStatus}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              <div className="mt-4">
+                <p className="font-semibold mb-2">Passengers:</p>
+                {pnrData.passengerList.map((passenger, index) => (
+                  <div key={index} className="ml-4 mb-2 text-sm">
+                    <p className="font-medium">Passenger {passenger.passengerSerialNumber}:</p>
+                    <p className="ml-4">Booking Status: {passenger.bookingStatus}</p>
+                    <p className="ml-4">Current Status: {passenger.currentStatus}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {cancellationScenarios.length > 0 && (
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Cancellation Scenarios</span>
-                    <Select
-                      value={selectedPaymentMethod.name}
-                      onValueChange={(value) => setSelectedPaymentMethod(paymentMethods.find(m => m.name === value) || paymentMethods[0])}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Payment Method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paymentMethods.map((method) => (
-                          <SelectItem key={method.name} value={method.name}>
-                            {method.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-y-auto max-h-[60vh] lg:max-h-[calc(100vh-200px)] text-sm sm:text-base">
-                  <p className="mb-2 font-semibold">
+              <div className="bg-white p-4 rounded-lg shadow">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold mb-2 sm:mb-0">Cancellation Scenarios</h2>
+                  <Select
+                    value={selectedPaymentMethod.name}
+                    onValueChange={(value) => setSelectedPaymentMethod(paymentMethods.find(m => m.name === value) || paymentMethods[0])}
+                  >
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <SelectValue placeholder="Payment Method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method.name} value={method.name}>
+                          {method.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-4 text-sm">
+                  <p className="font-semibold">
                     {getBestCancellationAdvice(
                       parse(pnrData.bookingDate, 'MMM d, yyyy h:mm:ss a', new Date()),
                       parse(pnrData.dateOfJourney, 'MMM d, yyyy h:mm:ss a', new Date())
@@ -348,14 +341,14 @@ const IRCTCCancellationCalculator: React.FC = () => {
                   {cancellationScenarios.map((scenario, index) => (
                     <div
                       key={index}
-                      className={`mt-2 p-2 rounded ${scenario.isBestTime
+                      className={`p-4 rounded mb-4 ${scenario.isBestTime
                         ? 'bg-green-100 border-2 border-green-500'
                         : scenario.isPast
                           ? 'bg-gray-300'
                           : 'bg-gray-100'
                         }`}
                     >
-                      <p>
+                      <p className="font-semibold mb-2">
                         <strong>{scenario.description}</strong>
                         {scenario.isBestTime && (
                           <span className="ml-2 text-green-600 font-bold">
@@ -363,15 +356,17 @@ const IRCTCCancellationCalculator: React.FC = () => {
                           </span>
                         )}
                       </p>
-                      <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
-                      <p>Estimated Cancellation Charge: ₹{scenario.charge}</p>
-                      <p>Estimated PG Charges: ₹{scenario.pgCharges}</p>
-                      <p>Estimated Refund Amount: ₹{scenario.refund}</p>
-                      {scenario.isPast && <p className="text-red-500">This time has passed</p>}
+                      <p className="mb-1">Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
+                      <p className="mb-1">Estimated Cancellation Charge: ₹{scenario.charge}</p>
+                      <p className="mb-1">Estimated PG Charges: ₹{scenario.pgCharges}</p>
+                      <p className="mb-1">
+                        Estimated Refund Amount: <span className="font-bold">₹{scenario.refund}</span>
+                      </p>
+                      {scenario.isPast && <p className="text-red-500 mt-2">This time has passed</p>}
                     </div>
                   ))}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
           </div>
         )}
