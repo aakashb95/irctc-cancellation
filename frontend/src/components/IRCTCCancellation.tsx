@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input";
 import axios from 'axios';
 import { differenceInHours, format, isBefore, parse, subHours } from 'date-fns';
 import React, { useEffect, useState } from 'react';
-import { Loader2 } from "lucide-react"; // Import the loader icon
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { paymentMethods, calculateRefundAmount, PaymentMethod, calculatePaymentCharges } from "@/utils/paymentCalculations";
 
@@ -73,7 +71,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
   const fetchPnrDetails = async () => {
     setError(null);
     setCancellationScenarios([]);
-    setPnrData(null); // Clear the existing PNR data
+    setPnrData(null);
     setIsLoading(true);
 
     const baseUrl = process.env.NODE_ENV === 'development'
@@ -86,10 +84,14 @@ const IRCTCCancellationCalculator: React.FC = () => {
         setPnrData(response.data.data);
         calculateCancellationScenarios(response.data.data);
       } else {
-        setError("Failed to fetch PNR details. Please try again.");
+        setError(response.data.message || "Failed to fetch PNR details. Please try again.");
       }
     } catch (error) {
-      setError("An error occurred while fetching PNR details.");
+      if (axios.isAxiosError(error) && error.response) {
+        setError(error.response.data.message || "An error occurred while fetching PNR details.");
+      } else {
+        setError("An error occurred while fetching PNR details.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -347,10 +349,10 @@ const IRCTCCancellationCalculator: React.FC = () => {
                     <div
                       key={index}
                       className={`mt-2 p-2 rounded ${scenario.isBestTime
-                          ? 'bg-green-100 border-2 border-green-500'
-                          : scenario.isPast
-                            ? 'bg-gray-300'
-                            : 'bg-gray-100'
+                        ? 'bg-green-100 border-2 border-green-500'
+                        : scenario.isPast
+                          ? 'bg-gray-300'
+                          : 'bg-gray-100'
                         }`}
                     >
                       <p>
@@ -377,7 +379,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
         {error && (
           <Alert variant="destructive">
             <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="text-red-600 font-semibold">{error}</AlertDescription>
           </Alert>
         )}
       </div>
