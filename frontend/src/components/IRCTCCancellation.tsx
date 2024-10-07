@@ -9,6 +9,8 @@ import React, { useEffect, useState } from 'react';
 import { Loader2 } from "lucide-react"; // Import the loader icon
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HelpCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { paymentMethods, calculateRefundAmount, PaymentMethod, calculatePaymentCharges } from "@/utils/paymentCalculations";
 
 interface PNRData {
   pnrNumber: string;
@@ -33,6 +35,7 @@ interface CancellationScenario {
   description: string;
   charge: string;
   refund: string;
+  pgCharges: string;
   gst: string;
   dateTime: Date;
   isPast: boolean;
@@ -47,6 +50,7 @@ const IRCTCCancellationCalculator: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [departureDateTime, setDepartureDateTime] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(paymentMethods[0]);
 
   useEffect(() => {
     setCurrentTime(new Date());
@@ -115,12 +119,14 @@ const IRCTCCancellationCalculator: React.FC = () => {
         charge = flatRate * passengerCount;
       }
 
-      const refund = Math.max(fare - charge, 0);
+      const initialRefund = Math.max(0, fare - charge); // Ensure refund is not negative
+      const pgCharges = calculatePaymentCharges(fare, selectedPaymentMethod);
 
       scenarios.push({
         description,
         charge: charge.toFixed(2),
-        refund: refund.toFixed(2),
+        refund: initialRefund.toFixed(2),
+        pgCharges: pgCharges.toFixed(2),
         gst: '0.00',
         dateTime: scenarioTime,
         isPast: isBefore(scenarioTime, currentTime),
@@ -151,6 +157,42 @@ const IRCTCCancellationCalculator: React.FC = () => {
 
     setCancellationScenarios(scenarios);
   };
+
+  const sortCancellationScenarios = (scenarios: CancellationScenario[]): CancellationScenario[] => {
+    return scenarios.sort((a, b) => {
+      if (a.isBestTime) return -1;
+      if (b.isBestTime) return 1;
+      if (a.isPast && !b.isPast) return 1;
+      if (!a.isPast && b.isPast) return -1;
+      return parseFloat(b.refund) - parseFloat(a.refund);
+    });
+  };
+
+  const updateRefundAmounts = (paymentMethod: PaymentMethod) => {
+    if (!pnrData) return;
+
+    const updatedScenarios = cancellationScenarios.map(scenario => {
+      const fare = pnrData.bookingFare;
+      const charge = parseFloat(scenario.charge);
+      const pgCharges = calculatePaymentCharges(fare, paymentMethod);
+      const refund = Math.max(0, calculateRefundAmount(fare, charge, paymentMethod));
+      return {
+        ...scenario,
+        refund: refund.toFixed(2),
+        pgCharges: pgCharges.toFixed(2)
+      };
+    });
+
+    // Sort the scenarios after updating the refund amounts
+    const sortedScenarios = sortCancellationScenarios(updatedScenarios);
+    setCancellationScenarios(sortedScenarios);
+  };
+
+  useEffect(() => {
+    if (pnrData) {
+      updateRefundAmounts(selectedPaymentMethod);
+    }
+  }, [selectedPaymentMethod, pnrData]);
 
   const getClassFullName = (classCode: string) => {
     const classMap: { [key: string]: string } = {
@@ -274,18 +316,23 @@ const IRCTCCancellationCalculator: React.FC = () => {
             {cancellationScenarios.length > 0 && (
               <Card className="h-full">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    Cancellation Scenarios
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 ml-2 text-red-500" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>The actual refund amount may vary slightly depending on the payment gateway used. These are estimates based on IRCTC's policy.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Cancellation Scenarios</span>
+                    <Select
+                      value={selectedPaymentMethod.name}
+                      onValueChange={(value) => setSelectedPaymentMethod(paymentMethods.find(m => m.name === value) || paymentMethods[0])}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Payment Method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentMethods.map((method) => (
+                          <SelectItem key={method.name} value={method.name}>
+                            {method.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-y-auto max-h-[60vh] lg:max-h-[calc(100vh-200px)] text-sm sm:text-base">
@@ -296,35 +343,27 @@ const IRCTCCancellationCalculator: React.FC = () => {
                     )}
                   </p>
 
-                  {/* Best time to cancel scenario */}
-                  {cancellationScenarios.filter(scenario => scenario.isBestTime).map((scenario, index) => (
+                  {cancellationScenarios.map((scenario, index) => (
                     <div
                       key={index}
-                      className="mt-2 p-2 rounded bg-green-100 border-2 border-green-500"
+                      className={`mt-2 p-2 rounded ${scenario.isBestTime
+                          ? 'bg-green-100 border-2 border-green-500'
+                          : scenario.isPast
+                            ? 'bg-gray-300'
+                            : 'bg-gray-100'
+                        }`}
                     >
                       <p>
                         <strong>{scenario.description}</strong>
-                        <span className="ml-2 text-green-600 font-bold">
-                          (Best time to cancel)
-                        </span>
+                        {scenario.isBestTime && (
+                          <span className="ml-2 text-green-600 font-bold">
+                            (Best time to cancel)
+                          </span>
+                        )}
                       </p>
                       <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
                       <p>Estimated Cancellation Charge: ₹{scenario.charge}</p>
-                      <p>Estimated Refund Amount: ₹{scenario.refund}</p>
-                    </div>
-                  ))}
-
-                  <p className="mt-4 mb-2">Other cancellation scenarios:</p>
-                  {cancellationScenarios.filter(scenario => !scenario.isBestTime).map((scenario, index) => (
-                    <div
-                      key={index}
-                      className={`mt-2 p-2 rounded ${scenario.isPast ? 'bg-gray-300' : 'bg-gray-100'}`}
-                    >
-                      <p>
-                        <strong>{scenario.description}</strong>
-                      </p>
-                      <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
-                      <p>Estimated Cancellation Charge: ₹{scenario.charge}</p>
+                      <p>Estimated PG Charges: ₹{scenario.pgCharges}</p>
                       <p>Estimated Refund Amount: ₹{scenario.refund}</p>
                       {scenario.isPast && <p className="text-red-500">This time has passed</p>}
                     </div>
