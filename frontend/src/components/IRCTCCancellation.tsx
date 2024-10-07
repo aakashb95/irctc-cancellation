@@ -7,6 +7,8 @@ import axios from 'axios';
 import { differenceInHours, format, isBefore, parse, subHours } from 'date-fns';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from "lucide-react"; // Import the loader icon
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
 
 interface PNRData {
   pnrNumber: string;
@@ -272,7 +274,19 @@ const IRCTCCancellationCalculator: React.FC = () => {
             {cancellationScenarios.length > 0 && (
               <Card className="h-full">
                 <CardHeader>
-                  <CardTitle>Cancellation Scenarios</CardTitle>
+                  <CardTitle className="flex items-center">
+                    Cancellation Scenarios
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-4 w-4 ml-2 text-red-500" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>The actual refund amount may vary slightly depending on the payment gateway used. These are estimates based on IRCTC's policy.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-y-auto max-h-[60vh] lg:max-h-[calc(100vh-200px)] text-sm sm:text-base">
                   <p className="mb-2 font-semibold">
@@ -295,8 +309,8 @@ const IRCTCCancellationCalculator: React.FC = () => {
                         </span>
                       </p>
                       <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
-                      <p>Cancellation Charge: ₹{scenario.charge}</p>
-                      <p>Refund Amount: ₹{scenario.refund}</p>
+                      <p>Estimated Cancellation Charge: ₹{scenario.charge}</p>
+                      <p>Estimated Refund Amount: ₹{scenario.refund}</p>
                     </div>
                   ))}
 
@@ -310,8 +324,8 @@ const IRCTCCancellationCalculator: React.FC = () => {
                         <strong>{scenario.description}</strong>
                       </p>
                       <p>Date & Time: {format(scenario.dateTime, 'dd-MM-yyyy HH:mm')}</p>
-                      <p>Cancellation Charge: ₹{scenario.charge}</p>
-                      <p>Refund Amount: ₹{scenario.refund}</p>
+                      <p>Estimated Cancellation Charge: ₹{scenario.charge}</p>
+                      <p>Estimated Refund Amount: ₹{scenario.refund}</p>
                       {scenario.isPast && <p className="text-red-500">This time has passed</p>}
                     </div>
                   ))}
